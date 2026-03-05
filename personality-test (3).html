@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>性格遗传测试 — 你的性格写在基因里吗？</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: #0D0D0D;
+    font-family: 'Noto Sans SC', sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 60px;
+  }
+  #app { width: 100%; max-width: 460px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes dna1 { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+  @keyframes dna2 { 0%,100%{opacity:0.25;} 50%{opacity:1;} }
+  @keyframes barFill { from{width:0} to{width:var(--w)} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  @keyframes pulseDot { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+
+  .fade-up { animation: fadeUp 0.55s cubic-bezier(.4,0,.2,1) both; }
+  .fade-up-1 { animation: fadeUp 0.55s 0.1s cubic-bezier(.4,0,.2,1) both; }
+  .fade-up-2 { animation: fadeUp 0.55s 0.2s cubic-bezier(.4,0,.2,1) both; }
+  .fade-up-3 { animation: fadeUp 0.55s 0.3s cubic-bezier(.4,0,.2,1) both; }
+
+  .card {
+    background: #111827;
+    border: 1px solid #1F2937;
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+  }
+  .btn-primary {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, #7C3AED, #EC4899);
+    border: none; border-radius: 14px;
+    color: #fff; font-size: 16px; font-weight: 700;
+    font-family: 'Noto Sans SC', sans-serif;
+    cursor: pointer; transition: all 0.2s;
+    display: block; text-align: center;
+  }
+  .btn-primary:hover { opacity: 0.9; transform: scale(1.01); }
+  .btn-primary:disabled { background: #1F2937; color: #4B5563; cursor: not-allowed; transform: none; opacity: 0.7; }
+
+  .btn-ghost {
+    width: 100%; padding: 14px;
+    background: transparent;
+    border: 1.5px solid #374151;
+    border-radius: 14px; color: #9CA3AF;
+    font-size: 14px; font-weight: 600;
+    font-family: 'Noto Sans SC', sans-serif;
+    cursor: pointer; transition: all 0.2s;
+    margin-top: 14px;
+  }
+  .btn-ghost:hover { border-color: #4B5563; color: #D1D5DB; }
+
+  .opt-card {
+    background: #111827;
+    border: 1.5px solid #1F2937;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(.4,0,.2,1);
+    user-select: none;
+  }
+  .opt-card:hover { border-color: #7C3AED; transform: translateX(4px); }
+  .opt-card.selected { background: #1E1033; border-color: #7C3AED; }
+
+  .radio-dot {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid #374151;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .opt-card.selected .radio-dot { background: #7C3AED; border-color: #7C3AED; }
+  .radio-inner { width: 8px; height: 8px; background: #fff; border-radius: 50%; display: none; }
+  .opt-card.selected .radio-inner { display: block; }
+
+  .opt-text { font-size: 13px; color: #9CA3AF; line-height: 1.55; transition: color 0.2s; }
+  .opt-card.selected .opt-text { color: #E9D5FF; }
+
+  /* progress */
+  .progress-wrap { margin-bottom: 28px; }
+  .progress-labels { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .progress-track { height: 6px; background: #1F2937; border-radius: 99px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, #7C3AED, #EC4899);
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .step-dots { display: flex; gap: 4px; margin-top: 8px; }
+  .step-dot { flex: 1; height: 3px; border-radius: 2px; background: #1F2937; transition: background 0.3s; }
+  .step-dot.dad-done { background: #7C3AED; }
+  .step-dot.mom-done { background: #EC4899; }
+  .step-dot.env-done { background: #10B981; }
+
+  /* loading */
+  .loading-wrap { text-align: center; padding: 60px 20px; animation: fadeIn 0.4s ease; }
+  .dna-icon { animation: float 2.4s ease-in-out infinite; display: inline-block; }
+
+  /* trait bar */
+  .trait-bar-bg { height: 8px; background: #1F2937; border-radius: 99px; overflow: hidden; margin-top: 5px; margin-bottom: 12px; }
+  .trait-bar-fill { height: 100%; border-radius: 99px; width: 0; transition: width 1s cubic-bezier(.4,0,.2,1); }
+
+  /* result header */
+  .result-header {
+    border-radius: 20px; padding: 32px 28px; margin-bottom: 18px;
+    text-align: center; position: relative; overflow: hidden;
+  }
+  .result-deco {
+    position: absolute; top: -20px; right: -20px;
+    width: 100px; height: 100px;
+    background: rgba(255,255,255,0.1); border-radius: 50%;
+  }
+
+  /* strength chips */
+  .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chip {
+    font-size: 12px; padding: 4px 12px; border-radius: 99px;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .chip-green { background: #064E3B; color: #6EE7B7; }
+  .chip-amber { background: #451A03; color: #FCD34D; }
+
+  .note { font-size: 11px; color: #374151; text-align: center; margin-top: 12px; line-height: 1.7; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #0D0D0D; }
+  ::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ===================== DATA =====================
+const parentQuestions = [
+  {
+    id:"p1", parent:"dad", emoji:"👨",
+    question:"你的爸爸在人群中通常是？",
+    options:[
+      {text:"话多、爱社交，是气氛担当", traits:{E:3,A:1}},
+      {text:"沉稳内敛，话不多但句句有分量", traits:{I:3,C:1}},
+      {text:"随性幽默，走哪都能交到朋友", traits:{E:2,O:1}},
+      {text:"独来独往，享受自己的空间", traits:{I:3,N:1}},
+    ]
+  },
+  {
+    id:"p2", parent:"dad", emoji:"👨",
+    question:"爸爸面对压力或困难时？",
+    options:[
+      {text:"冷静分析，制定计划逐步解决", traits:{C:3,I:1}},
+      {text:"容易焦虑，情绪波动明显", traits:{N:3,E:1}},
+      {text:"逃避或拖延，等问题自己消失", traits:{N:2,I:1}},
+      {text:"乐观应对，相信一切都会好的", traits:{E:2,A:2}},
+    ]
+  },
+  {
+    id:"p3", parent:"dad", emoji:"👨",
+    question:"爸爸的生活方式更像？",
+    options:[
+      {text:"规律严谨，什么时间做什么事", traits:{C:3}},
+      {text:"随心所欲，今天比较重要", traits:{O:2,E:1}},
+      {text:"工作狂，事业放在首位", traits:{C:2,I:1}},
+      {text:"懒散随意，能躺着不坐着", traits:{N:1,I:2}},
+    ]
+  },
+  {
+    id:"p4", parent:"mom", emoji:"👩",
+    question:"你的妈妈在家庭中扮演的角色是？",
+    options:[
+      {text:"情感支柱，最懂得照顾每个人感受", traits:{A:3,E:1}},
+      {text:"决策者，家里的事她说了算", traits:{C:2,E:2}},
+      {text:"自由灵魂，不太管事但很open", traits:{O:3}},
+      {text:"内敛付出，默默做很多却不说", traits:{I:2,A:2}},
+    ]
+  },
+  {
+    id:"p5", parent:"mom", emoji:"👩",
+    question:"妈妈对你的教育方式偏向？",
+    options:[
+      {text:"严格管教，规矩很多", traits:{C:3,N:1}},
+      {text:"民主开明，尊重你的想法", traits:{O:2,A:2}},
+      {text:"情感勒索型，容易让你内疚", traits:{N:3,A:1}},
+      {text:"放任自由，基本不管", traits:{O:2,I:1}},
+    ]
+  },
+  {
+    id:"p6", parent:"mom", emoji:"👩",
+    question:"妈妈的情绪状态通常是？",
+    options:[
+      {text:"阳光积极，笑口常开", traits:{E:3,A:1}},
+      {text:"容易担心，经常焦虑", traits:{N:3}},
+      {text:"情绪稳定，很少大喜大悲", traits:{C:2,I:1}},
+      {text:"情绪多变，难以捉摸", traits:{N:2,O:1}},
+    ]
+  },
+  {
+    id:"p7", parent:"env", emoji:"🏠",
+    question:"你家庭氛围整体是？",
+    options:[
+      {text:"热闹活跃，经常有亲戚朋友来访", traits:{E:3,A:1}},
+      {text:"安静有序，大家各做各的", traits:{I:2,C:2}},
+      {text:"矛盾紧张，争吵较多", traits:{N:3}},
+      {text:"温馨但保守，不常谈论感受", traits:{A:1,I:1,C:1}},
+    ]
+  },
+  {
+    id:"p8", parent:"env", emoji:"🏠",
+    question:"家里对【失败】的态度是？",
+    options:[
+      {text:"允许失败，鼓励再试", traits:{O:3,A:1}},
+      {text:"强调结果，失败会被批评", traits:{N:2,C:1}},
+      {text:"回避谈论，沉默是金", traits:{I:2,N:1}},
+      {text:"比较型，总拿你和别人比", traits:{N:3,C:1}},
+    ]
+  },
+  {
+    id:"p9", parent:"env", emoji:"🏠",
+    question:"你成长环境中，情感表达是？",
+    options:[
+      {text:"开放的，大家会说「我爱你」、拥抱", traits:{E:2,A:3}},
+      {text:"含蓄的，爱是行动不是语言", traits:{I:2,C:1}},
+      {text:"压抑的，负面情绪不能表达", traits:{N:3,I:1}},
+      {text:"混乱的，情绪表达没有规律", traits:{N:2,O:1}},
+    ]
+  },
+];
+
+const personalityTypes = {
+  "外向探索者": {
+    emoji:"🦋", color:"#FF6B35",
+    gradFrom:"#FF6B35", gradTo:"#F7931E",
+    desc:"你大概率是个热情奔放、充满好奇心的人。遗传到了父母的社交能量，加上开放的家庭环境，让你天生喜欢探索新事物、结交新朋友。",
+    strengths:["适应性强","创造力突出","天生领导气质","情感感染力强"],
+    challenges:["注意力容易分散","可能缺乏耐性","边界感稍弱"],
+    advice:"你的能量是礼物，但记得偶尔给自己独处的空间充电，深度比广度更能带来满足感。",
+    mbti:"与MBTI的ENFP / ESTP相近"
+  },
+  "温暖守护者": {
+    emoji:"🌻", color:"#43AA8B",
+    gradFrom:"#F9C74F", gradTo:"#43AA8B",
+    desc:"你很可能是那种让人感到安全和温暖的人。父母的情感模式让你天生具备同理心，家庭环境培养了你照顾他人的能力。",
+    strengths:["超强同理心","善于倾听","团队粘合剂","值得信赖"],
+    challenges:["容易忽视自己需求","过度付出","难以拒绝别人"],
+    advice:"先照顾好自己，才能更好地照顾别人。学会说【不】不是自私，而是自我尊重。",
+    mbti:"与MBTI的ENFJ / ESFJ相近"
+  },
+  "深思内省者": {
+    emoji:"🌙", color:"#4A90E2",
+    gradFrom:"#4A90E2", gradTo:"#7B68EE",
+    desc:"你大概率是个思维深邃、做事有条理的内向者。遗传了父母的谨慎特质，家庭环境让你习惯独立思考，你的力量来自内心。",
+    strengths:["深度思考能力","高度专注","可靠稳定","自律性强"],
+    challenges:["社交消耗大","容易过度分析","决策时优柔寡断"],
+    advice:"你的内心世界比别人想象的丰富得多。找到1-2个真正理解你的人，比社交100个泛泛之交更重要。",
+    mbti:"与MBTI的INTJ / ISTJ相近"
+  },
+  "敏感艺术家": {
+    emoji:"🎨", color:"#9B59B6",
+    gradFrom:"#9B59B6", gradTo:"#E74C3C",
+    desc:"你可能拥有极度丰富的内心世界和情感体验。家庭环境的不确定性激发了你的感受力，你能感知到别人感知不到的细腻之处。",
+    strengths:["极高感受力","创造力惊人","对美有独特品味","共情能力强"],
+    challenges:["情绪容易被影响","自我怀疑","需要大量情感空间"],
+    advice:"你的敏感是超能力，不是弱点。建立稳定的日常习惯，用创作来表达情感而不是压抑它。",
+    mbti:"与MBTI的INFP / INFJ相近"
+  },
+  "务实执行者": {
+    emoji:"⚙️", color:"#4CA1AF",
+    gradFrom:"#2C3E50", gradTo:"#4CA1AF",
+    desc:"你很可能是个脚踏实地、自律高效的人。父母的严谨态度和有规律的家庭环境塑造了你强大的执行力和专注力。",
+    strengths:["超强执行力","目标感清晰","抗压能力强","值得信赖"],
+    challenges:["完美主义倾向","不善于表达情感","灵活性稍欠"],
+    advice:"效率很重要，但别忘了享受过程。有时候「够好」就是最好，完美会让你错过很多美好时刻。",
+    mbti:"与MBTI的ISTJ / ENTJ相近"
+  },
+  "焦虑适应者": {
+    emoji:"🌊", color:"#1ABC9C",
+    gradFrom:"#1ABC9C", gradTo:"#3498DB",
+    desc:"你可能是个内心敏感但极具适应力的人。家庭环境中的情感张力让你学会了快速读懂他人，你比任何人都懂得如何在复杂关系中周旋。",
+    strengths:["超强察言观色","适应力极强","善解人意","韧性突出"],
+    challenges:["过度敏感他人评价","焦虑感偏高","自我价值感不稳定"],
+    advice:"你在复杂环境中成长，这给了你普通人没有的智慧。现在是时候把这份智慧用来照顾自己了。",
+    mbti:"与MBTI的ISFJ / INFJ相近"
+  },
+};
+
+// ===================== STATE =====================
+let state = {
+  step: "intro",   // intro | quiz | loading | result
+  current: 0,
+  answers: [],
+  selected: null,
+  resultType: null,
+  scores: {},
+  loadingPct: 0,
+};
+
+// ===================== COMPUTE =====================
+function computeResult(answers) {
+  const s = {E:0,I:0,O:0,A:0,C:0,N:0};
+  answers.forEach(a => { if(a) Object.entries(a.traits).forEach(([t,v])=>{ s[t]+=v; }); });
+  const isE=s.E>s.I, isO=s.O>2, isA=s.A>s.C, isC=s.C>s.O, isN=s.N>3, isI=s.I>s.E;
+  if(isN&&isO) return "敏感艺术家";
+  if(isN&&isA) return "焦虑适应者";
+  if(isE&&isO) return "外向探索者";
+  if(isE&&isA) return "温暖守护者";
+  if(isI&&isC) return "深思内省者";
+  if(isC&&isI) return "务实执行者";
+  const combos=[
+    [s.E+s.O,"外向探索者"],[s.A+s.E,"温暖守护者"],
+    [s.I+s.C,"深思内省者"],[s.N+s.O,"敏感艺术家"],
+    [s.C+s.I,"务实执行者"],[s.N+s.A,"焦虑适应者"],
+  ];
+  combos.sort((a,b)=>b[0]-a[0]);
+  return combos[0][1];
+}
+
+// ===================== RENDER =====================
+function render() {
+  const app = document.getElementById("app");
+  const {step,current,answers,selected,resultType,scores,loadingPct} = state;
+
+  if(step==="intro") {
+    app.innerHTML = `
+      <div class="fade-up" style="text-align:center;margin-bottom:32px">
+        <div style="display:inline-block;background:linear-gradient(135deg,#7C3AED,#EC4899);border-radius:999px;padding:6px 18px;margin-bottom:20px">
+          <span style="font-size:11px;color:#fff;letter-spacing:2px">基于行为遗传学</span>
+        </div>
+        ${dnaSVG()}
+        <h1 style="font-size:26px;font-weight:900;color:#fff;margin:16px 0 8px;line-height:1.35">
+          你的性格<br>
+          <span style="background:linear-gradient(90deg,#7C3AED,#EC4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+            写在基因里吗？
+          </span>
+        </h1>
+        <p style="font-size:13.5px;color:#6B7280;line-height:1.75;margin:0 8px">
+          通过描述父母的性格特点和家庭环境，<br>
+          根据 <strong style="color:#9CA3AF">遗传率 + 家庭影响模型</strong> 推算你<br>大概率拥有的性格特征。
+        </p>
+      </div>
+
+      <div class="fade-up-1 card" style="display:flex;align-items:flex-start;gap:14px">
+        <span style="font-size:22px;flex-shrink:0;margin-top:2px">🧬</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#E5E7EB;margin-bottom:4px">遗传影响约 40–60%</div>
+          <div style="font-size:12px;color:#6B7280;line-height:1.6">双胞胎研究表明，大五人格各维度约有40-60%由基因决定</div>
+        </div>
+      </div>
+      <div class="fade-up-2 card" style="display:flex;align-items:flex-start;gap:14px">
+        <span style="font-size:22px;flex-shrink:0;margin-top:2px">🏠</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#E5E7EB;margin-bottom:4px">家庭环境塑造其余</div>
+          <div style="font-size:12px;color:#6B7280;line-height:1.6">早期家庭氛围、教育方式和情感模式影响性格的另一半</div>
+        </div>
+      </div>
+      <div class="fade-up-3 card" style="display:flex;align-items:flex-start;gap:14px">
+        <span style="font-size:22px;flex-shrink:0;margin-top:2px">🔬</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#E5E7EB;margin-bottom:4px">Big Five 人格模型</div>
+          <div style="font-size:12px;color:#6B7280;line-height:1.6">基于外向性、开放性、宜人性、尽责性、神经质五维度推算</div>
+        </div>
+      </div>
+
+      <div style="margin:16px 0 8px;font-size:12px;color:#4B5563;text-align:center">共 9 道题 · 约 3 分钟完成</div>
+      <button class="btn-primary" onclick="startQuiz()">开始测试 🧬</button>
+      <div class="note">* 本测试基于行为遗传学原理，结果仅供娱乐参考，不构成专业心理诊断</div>
+    `;
+  }
+
+  else if(step==="quiz") {
+    const q = parentQuestions[current];
+    const total = parentQuestions.length;
+    const pct = ((current+1)/total)*100;
+    const groupLabel = current<3?"爸爸":current<6?"妈妈":"家庭环境";
+    const groupColor = current<3?"#7C3AED":current<6?"#EC4899":"#10B981";
+    const groupProgress = current<3?`${current+1}/3`:current<6?`${current-2}/3`:`${current-5}/3`;
+    const groupName = current<3?`👨 爸爸的性格 (${groupProgress})`
+                    :current<6?`👩 妈妈的性格 (${groupProgress})`
+                    :`🏠 家庭环境 (${groupProgress})`;
+
+    let dots = "";
+    for(let i=0;i<total;i++){
+      const cls = i<current?(i<3?"dad-done":i<6?"mom-done":"env-done"):"";
+      dots += `<div class="step-dot ${cls}"></div>`;
+    }
+
+    const opts = q.options.map((opt,i)=>{
+      const sel = selected===i ? "selected" : "";
+      return `
+        <div class="opt-card ${sel}" onclick="selectOpt(${i})">
+          <div class="radio-dot"><div class="radio-inner"></div></div>
+          <span class="opt-text">${opt.text}</span>
+        </div>`;
+    }).join("");
+
+    const btnLabel = current+1===total ? "查看我的性格推算 🎯" : "下一题 →";
+    const btnDisabled = selected===null ? "disabled" : "";
+
+    app.innerHTML = `
+      <div class="fade-up">
+        <div class="progress-wrap">
+          <div class="progress-labels">
+            <span style="font-size:12px;color:#9CA3AF">${groupName}</span>
+            <span style="font-size:12px;color:#7C3AED;font-weight:600">${current+1}/${total}</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="step-dots">${dots}</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
+          <div style="background:${groupColor}20;border:1px solid ${groupColor}40;border-radius:999px;padding:4px 14px;display:inline-flex;align-items:center;gap:6px">
+            <span style="font-size:14px">${q.emoji}</span>
+            <span style="font-size:11px;color:${groupColor};font-weight:700">${groupLabel}</span>
+          </div>
+          <span style="font-size:11px;color:#4B5563">第 ${current+1} 题 / 共 ${total} 题</span>
+        </div>
+
+        <div style="font-size:18px;font-weight:700;color:#F9FAFB;line-height:1.5;margin-bottom:22px">
+          ${q.question}
+        </div>
+
+        <div id="options">${opts}</div>
+
+        <button class="btn-primary" id="next-btn" onclick="nextQuestion()" ${btnDisabled}>
+          ${btnLabel}
+        </button>
+      </div>
+    `;
+  }
+
+  else if(step==="loading") {
+    app.innerHTML = `
+      <div class="loading-wrap">
+        <div class="dna-icon" style="font-size:64px">🧬</div>
+        <div style="font-size:18px;font-weight:700;color:#E5E7EB;margin:20px 0 8px">正在分析遗传数据...</div>
+        <div style="font-size:13px;color:#6B7280;margin-bottom:32px">结合父母性格 × 家庭环境 × Big Five 模型</div>
+        <div class="progress-track" style="margin:0 20px">
+          <div class="progress-fill" id="load-bar" style="width:${loadingPct}%"></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#7C3AED;font-weight:700">${Math.round(loadingPct)}%</div>
+        <div style="margin-top:20px;font-size:12px;color:#4B5563" id="load-label">
+          ${loadingPct<30?"🧬 提取遗传特征...":loadingPct<60?"🏠 分析家庭环境影响...":loadingPct<85?"🔬 匹配 Big Five 维度...":"✨ 生成性格报告..."}
+        </div>
+      </div>
+    `;
+  }
+
+  else if(step==="result" && resultType) {
+    const type = personalityTypes[resultType];
+    const totalScore = Object.values(scores).reduce((a,b)=>a+b,0)||1;
+    const traits = [
+      {label:"外向性 Extraversion", val:Math.min(100,(scores.E/totalScore)*300), color:"#FF6B35"},
+      {label:"开放性 Openness",      val:Math.min(100,(scores.O/totalScore)*350), color:"#9B59B6"},
+      {label:"宜人性 Agreeableness", val:Math.min(100,(scores.A/totalScore)*350), color:"#1ABC9C"},
+      {label:"尽责性 Conscientiousness",val:Math.min(100,(scores.C/totalScore)*350),color:"#4A90E2"},
+      {label:"神经质 Neuroticism",   val:Math.min(100,(scores.N/totalScore)*300), color:"#E74C3C"},
+    ];
+    const traitBars = traits.map(t=>`
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12.5px;color:#D1D5DB">${t.label}</span>
+          <span style="font-size:12px;color:${t.color};font-weight:700">${Math.round(t.val)}%</span>
+        </div>
+        <div class="trait-bar-bg">
+          <div class="trait-bar-fill" data-width="${t.val}" style="background:${t.color}"></div>
+        </div>
+      </div>`).join("");
+
+    const strengths = type.strengths.map(s=>`<span class="chip chip-green">✦ ${s}</span>`).join("");
+    const challenges = type.challenges.map(c=>`<span class="chip chip-amber">● ${c}</span>`).join("");
+
+    app.innerHTML = `
+      <div class="fade-up">
+        <div class="result-header" style="background:linear-gradient(135deg,${type.gradFrom},${type.gradTo})">
+          <div class="result-deco"></div>
+          <div style="font-size:56px;margin-bottom:8px">${type.emoji}</div>
+          <div style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.8);margin-bottom:4px">你大概率是</div>
+          <div style="font-size:28px;font-weight:900;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.2)">${resultType}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:6px">${type.mbti}</div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-size:13px;color:#D1D5DB;line-height:1.8">
+            🧬 <strong style="color:${type.color}">遗传 + 环境推断</strong><br>${type.desc}
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-size:11px;color:#6B7280;letter-spacing:2px;margin-bottom:16px">BIG FIVE 性格维度推算</div>
+          ${traitBars}
+          <div style="font-size:11px;color:#4B5563;margin-top:4px">* 基于父母性格遗传率（约40-60%）与家庭环境影响推算，仅供参考</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="card" style="margin-bottom:0">
+            <div style="font-size:12px;color:#10B981;font-weight:700;margin-bottom:10px">✨ 你的优势</div>
+            <div class="chip-grid">${strengths}</div>
+          </div>
+          <div class="card" style="margin-bottom:0">
+            <div style="font-size:12px;color:#F59E0B;font-weight:700;margin-bottom:10px">⚡ 可能挑战</div>
+            <div class="chip-grid">${challenges}</div>
+          </div>
+        </div>
+
+        <div class="card" style="background:linear-gradient(135deg,${type.color}15,${type.color}05);border-color:${type.color}30;margin-bottom:0">
+          <div style="font-size:12px;color:${type.color};font-weight:700;margin-bottom:8px">💌 给你的话</div>
+          <div style="font-size:13px;color:#D1D5DB;line-height:1.8">${type.advice}</div>
+        </div>
+
+        <button class="btn-ghost" onclick="restart()">🔄 重新测试</button>
+        <div class="note">
+          科学依据：性格遗传率研究来源于双胞胎行为遗传学（Bouchard & McGue, 2003）<br>
+          家庭环境影响参考依附理论（Bowlby）与社会学习理论（Bandura）
+        </div>
+      </div>
+    `;
+
+    // Animate bars after render
+    setTimeout(()=>{
+      document.querySelectorAll(".trait-bar-fill").forEach((el,i)=>{
+        const w = el.dataset.width;
+        setTimeout(()=>{ el.style.width = w+"%"; }, 200+i*150);
+      });
+    }, 100);
+  }
+}
+
+// ===================== DNA SVG =====================
+function dnaSVG() {
+  let circles = "";
+  for(let i=0;i<8;i++){
+    const y = 10+i*9;
+    const x1 = 15+Math.sin(i*0.8)*14;
+    const x2 = 45-Math.sin(i*0.8)*14;
+    const delay = i*0.17;
+    circles += `
+      <circle cx="${x1}" cy="${y}" r="4" fill="#7C3AED"
+        style="animation:dna1 1.4s ${delay}s ease-in-out infinite"/>
+      <circle cx="${x2}" cy="${y}" r="4" fill="#EC4899"
+        style="animation:dna2 1.4s ${delay}s ease-in-out infinite"/>
+      <line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"
+        stroke="#C4B5FD" stroke-width="1.5" opacity="0.45"/>
+    `;
+  }
+  return `<svg width="60" height="80" viewBox="0 0 60 80" style="display:block;margin:0 auto">${circles}</svg>`;
+}
+
+// ===================== ACTIONS =====================
+function startQuiz() {
+  state.step = "quiz";
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function selectOpt(i) {
+  state.selected = i;
+  document.querySelectorAll(".opt-card").forEach((el,idx)=>{
+    el.classList.toggle("selected", idx===i);
+  });
+  const btn = document.getElementById("next-btn");
+  if(btn){ btn.disabled = false; }
+}
+
+function nextQuestion() {
+  if(state.selected===null) return;
+  const q = parentQuestions[state.current];
+  const ans = q.options[state.selected];
+  state.answers.push(ans);
+  state.selected = null;
+
+  if(state.current+1 < parentQuestions.length) {
+    state.current++;
+    render();
+    window.scrollTo({top:0,behavior:"smooth"});
+  } else {
+    // Compute scores
+    const sc={E:0,I:0,O:0,A:0,C:0,N:0};
+    state.answers.forEach(a=>{ if(a) Object.entries(a.traits).forEach(([t,v])=>{ sc[t]+=v; }); });
+    state.scores = sc;
+    state.resultType = computeResult(state.answers);
+    state.step = "loading";
+    state.loadingPct = 0;
+    render();
+    window.scrollTo({top:0,behavior:"smooth"});
+
+    // Animate loading
+    const interval = setInterval(()=>{
+      state.loadingPct += Math.random()*8+3;
+      if(state.loadingPct >= 100) {
+        state.loadingPct = 100;
+        clearInterval(interval);
+        setTimeout(()=>{ state.step="result"; render(); window.scrollTo({top:0,behavior:"smooth"}); }, 400);
+        return;
+      }
+      const bar = document.getElementById("load-bar");
+      if(bar) bar.style.width = state.loadingPct+"%";
+      const pctEl = bar && bar.parentElement && bar.parentElement.nextElementSibling;
+      const labelEl = document.getElementById("load-label");
+      if(pctEl) pctEl.textContent = Math.round(state.loadingPct)+"%";
+      if(labelEl) labelEl.textContent =
+        state.loadingPct<30?"🧬 提取遗传特征...":
+        state.loadingPct<60?"🏠 分析家庭环境影响...":
+        state.loadingPct<85?"🔬 匹配 Big Five 维度...":"✨ 生成性格报告...";
+    }, 120);
+  }
+}
+
+function restart() {
+  state = {step:"intro",current:0,answers:[],selected:null,resultType:null,scores:{},loadingPct:0};
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+// ===================== INIT =====================
+render();
+</script>
+</body>
+</html>
